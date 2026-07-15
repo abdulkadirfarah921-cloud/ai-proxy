@@ -1,6 +1,6 @@
 {
-  "name": "shadowking-factory",
-  "version": "2.0.0",
+  "name": "shadowking-free-factory",
+  "version": "4.0.0",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "dependencies": {
