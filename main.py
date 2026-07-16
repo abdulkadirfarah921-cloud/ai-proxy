@@ -1,28 +1,41 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import os
+from fastapi.responses import JSONResponse
 import google.generativeai as genai
+import os
 
 app = FastAPI()
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
-
+# اسمح للواجهة تكلم السيرفر
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # اسمح لكل المواقع
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# حط المفاتيح من Environment Variables
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 @app.get("/")
-def home():
+def read_root():
     return {"status": "ShadowKing AI Server is Running 👑"}
 
-@app.post("/api/chat")
-async def chat(req: Request):
-    data = await req.json()
-    prompt = data.get("prompt")
-    mode = data.get("mode")
-    response = model.generate_content(f"انت مساعد ذكي اسمك ShadowKing. الرد بلهجة ملكية. الوضع: {mode}. السؤال: {prompt}")
-    return {"text": f"👑 {response.text}"}
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_message = data.get("message")
+    
+    if not user_message:
+        return JSONResponse(status_code=400, content={"error": "No message provided"})
+    
+    try:
+        response = model.generate_content(user_message)
+        return {"reply": response.text}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
