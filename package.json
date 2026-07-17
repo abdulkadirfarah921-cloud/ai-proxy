@@ -1,5 +1,5 @@
 {
-  "name": "shadowking-free-factory",
+  "name": "ai-proxy-qnen",
   "version": "5.0.0",
   "scripts": {
     "start": "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 10000"
