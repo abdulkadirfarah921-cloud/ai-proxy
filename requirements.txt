@@ -1,6 +1,4 @@
 fastapi
 uvicorn[standard]
-python-multipart
-cors-headers
 requests
-python-dotenv
+python-multipart
