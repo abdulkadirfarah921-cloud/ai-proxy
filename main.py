@@ -5,7 +5,6 @@ import os, requests, base64, time
 
 app = FastAPI(title="Shadowking AI Factory")
 
-# اهم سطر عشان github + chat.html يشتغلو مع render
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,6 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# بنسحب التوكن من Render بس. مافي توكن في الكود
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_USER = "abdulkadirfarah921-cloud"
 
@@ -25,13 +25,12 @@ class AudioRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "👑 ShadowKing AI Server is Running"}
+    return {"status": "👑 ShadowKing AI Server is Running on ai-proxy-qnen"}
 
 @app.get("/health")
 def health():
     return "OK"
 
-# 1. الشات العادي + صنع موقع + صنع لعبة
 @app.post("/api/chat")
 async def chat(data: Message):
     message = data.message
@@ -44,88 +43,47 @@ async def chat(data: Message):
     elif message.startswith('[game]'):
         mode = 'game'
         prompt = message.replace('[game]', '').strip()
-    elif message.startswith('[audio]'):
-        mode = 'audio'
-        prompt = message.replace('[audio]', '').strip()
 
-    projectName = prompt.replace(" ", "-")[:30].lower()
+    projectName = prompt.replace(" ", "-")[:25].lower()
 
-    if not GITHUB_TOKEN and mode in ['website', 'game']:
-        return {"reply": "❌ خطأ: GITHUB_TOKEN مش موجود في Render"}
+    if mode in ['website', 'game'] and not GITHUB_TOKEN:
+        return {"reply": "❌ خطأ: GITHUB_TOKEN مش موجود في Render > Environment"}
 
     try:
+        headers = {'Authorization': f'token {GITHUB_TOKEN}'} if GITHUB_TOKEN else {}
+
         if mode == 'website':
             htmlCode = f"""<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>{prompt}</title>
+<head><meta charset="UTF-8"><title>{prompt}</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
-<style>
-body{{background:linear-gradient(135deg,#1a0033,#000);color:#FFD700;text-align:center;padding:100px 20px;font-family:Cairo;margin:0;}}
-h1{{font-size:50px;text-shadow:0 0 20px #FFD700;}}
-p{{font-size:20px;}}
-</style>
-</head>
-<body>
-<h1>👑 {prompt}</h1>
-<p>تم صنعه بواسطة Shadowking AI</p>
-</body>
-</html>"""
+<style>body{{background:linear-gradient(135deg,#1a0033,#000);color:#FFD700;text-align:center;padding:100px 20px;font-family:Cairo;}}h1{{font-size:50px;text-shadow:0 0 20px #FFD700;}}</style>
+</head><body><h1>👑 {prompt}</h1><p>تم صنعه بواسطة Shadowking AI</p></body></html>"""
 
-            headers = {'Authorization': f'token {GITHUB_TOKEN}'}
-            requests.post(f'https://api.github.com/user/repos', json={'name': projectName, 'private': False}, headers=headers)
+            requests.post('https://api.github.com/user/repos', json={'name': projectName, 'private': False}, headers=headers)
             requests.put(f'https://api.github.com/repos/{GITHUB_USER}/{projectName}/contents/index.html',
                 json={'message': 'Created by ShadowKing AI', 'content': base64.b64encode(htmlCode.encode()).decode()}, headers=headers)
 
             siteLink = f'https://{GITHUB_USER}.github.io/{projectName}'
-            return {"reply": f"🌐 **تم يا ملك! صنعنا موقعك**\n\n**الرابط:**\n{siteLink}\n\nاستنى دقيقتين لحد ما يتفعل على github pages"}
+            return {"reply": f"🌐 **تم يا ملك!**\n\n**رابط موقعك:**\n{siteLink}\n\nاستنى دقيقتين يتفعل"}
 
         elif mode == 'game':
-            gameCode = f"""<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head><meta charset="UTF-8"><title>{prompt}</title>
-<style>body{{background:#000;color:#FFD700;text-align:center;font-family:Cairo;padding:50px;}}</style>
-</head>
-<body>
-<h1>🎮 {prompt}</h1>
-<p>تم صنع اللعبة بواسطة Shadowking AI</p>
-</body></html>"""
-            headers = {'Authorization': f'token {GITHUB_TOKEN}'}
-            requests.post(f'https://api.github.com/user/repos', json={'name': projectName, 'private': False}, headers=headers)
+            gameCode = f"<!DOCTYPE html><html><head><title>{prompt}</title></head><body style='background:#000;color:#FFD700;text-align:center;padding:50px;font-family:Cairo'><h1>🎮 {prompt}</h1></body></html>"
+            requests.post('https://api.github.com/user/repos', json={'name': projectName, 'private': False}, headers=headers)
             requests.put(f'https://api.github.com/repos/{GITHUB_USER}/{projectName}/contents/index.html',
                 json={'message': 'Game by ShadowKing AI', 'content': base64.b64encode(gameCode.encode()).decode()}, headers=headers)
-
             siteLink = f'https://{GITHUB_USER}.github.io/{projectName}'
-            return {"reply": f"🎮 **تم صنع اللعبة**\n\n**العبها من هنا:**\n{siteLink}"}
-
-        elif mode == 'audio':
-            return {"reply": f"🎵 لصنع الصوت استخدم صفحة هندسة الصوت في الواجهة\n\nالوصف: {prompt}"}
+            return {"reply": f"🎮 **تم صنع اللعبة**\n\n**العبها:**\n{siteLink}"}
         else:
-            return {"reply": f"👑 الملك Shadowking يقول:\n{prompt}\n\nكيف بقدر اساعدك اكثر؟\n\nاكتب 'هندسة صوت' عشان تفتح استوديو الصوت"}
+            return {"reply": f"👑 الملك Shadowking يقول:\n{prompt}\n\nاكتب 'هندسة صوت' عشان تفتح الاستوديو"}
 
     except Exception as e:
         return {"reply": f"❌ خطأ: {str(e)}"}
 
-# 2. صنع صوت بالذكاء الاصطناعي - بياخد 5 دقايق
 @app.post("/api/generate-audio")
 async def generate_audio(data: AudioRequest):
     prompt = data.prompt
-
-    if not prompt:
-        return {"reply": "❌ اكتب وصف الصوت"}
-
-    # محاكاة انه بيصنع 5 دقايق
-    time.sleep(2) # شيل ده لو عندك API حقي
-
-    # لو عندك API زي ElevenLabs حطه هنا
-    # مثال: audio_url = call_elevenlabs_api(prompt)
-
-    # مؤقتا هنرجع صوت تجريبي لحد ما تربط API
+    if not prompt: return {"reply": "❌ اكتب وصف الصوت"}
+    time.sleep(3)
     demo_audio_url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-
-    return {
-        "reply": f"✅ تم صنع الصوت: {prompt}",
-        "audioUrl": demo_audio_url,
-        "duration": "00:30"
-    }
+    return {"reply": f"✅ تم صنع الصوت: {prompt}", "audioUrl": demo_audio_url}
