@@ -1,8 +1,12 @@
 {
   "name": "shadowking-free-factory",
   "version": "4.0.0",
-  "scripts": { 
-    "start": "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 10000" 
+  "description": "مصنع الملك بالبايثون",
+  "scripts": {
+    "start": "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 10000"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "engines": {
+    "python": "3.10.x"
+  }
 }
